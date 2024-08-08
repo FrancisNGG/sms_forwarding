@@ -1,6 +1,6 @@
 -- LuaTools需要PROJECT和VERSION这两个信息
 PROJECT = "sms_forwarding"
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 
 log.info("main", PROJECT, VERSION)
 
@@ -33,6 +33,8 @@ do
     end
 end
 
+--本机号码
+myNumber = ""
 
 --运营商给的dns经常抽风，手动指定
 socket.setDNS(nil, 1, "119.29.29.29")
@@ -121,6 +123,14 @@ sys.taskInit(function()
         return
     end
 
+    --获取本机号码
+    log.info("air780","waiting for get the local phone number...")
+    while true do
+        myNumber = air780.loopAT("AT+CNUM","AT_CNUM",1000)
+        log.info("air780","local phone numbe : ",myNumber)
+        if myNumber then break end
+    end
+
     --配置一下参数
     log.info("air780","configrate")
     --PDU模式
@@ -129,7 +139,7 @@ sys.taskInit(function()
     air780.loopAT("AT+CSCS=\"UCS2\"","AT_CSCS")
     --短信内容直接上报不缓存
     air780.loopAT("AT+CNMI=2,2,0,0,0","AT_CNMI")
-
+    
     --检查附着
     log.info("air780","wait for connection")
     while true do
@@ -137,6 +147,7 @@ sys.taskInit(function()
         log.info("air780","connection status",r)
         if r then break end
     end
+
     led.status = 4
     log.info("air780","connected! wait sms")
 

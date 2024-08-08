@@ -18,8 +18,8 @@ local cmdTag = "1234"
 --支持邮件/企业微信/钉钉/飞书/电报/IOS Bark
 
 --使用哪个推送服务
---可选：luatos/serverChan/pushover
-local useServer = "luatos"
+--可选：luatos/serverChan/pushover/bark
+local useServer = "bark"
 
 --LuatOS社区提供的推送服务 https://push.luatos.org/ ，用不到可留空
 --这里填.send前的字符串就好了
@@ -39,6 +39,9 @@ local serverKey = ""
 local pushoverApiToken = ""
 local pushoverUserKey = ""
 
+--bark配置，用不到可留空
+local barkApi = "https://api.day.app/"
+local barkKey = ""
 
 --缓存消息
 local buff = {}
@@ -50,10 +53,10 @@ function notify.add(phone,data)
     --匹配上了指令
     if data:find("C"..cmdTag) == 1 then
         log.info("cmd","matched cmd")
-        if data:find("C"..cmdTag.."REBOOT") == 1 then
+        if data:find("C"..cmdTag.."REBOOT") == 1 then --重启指令
             sys.timerStart(rtos.reboot,10000)
             data = "reboot command done"
-        elseif data:find("C"..cmdTag.."SEND") == 1 then
+        elseif data:find("C"..cmdTag.."SEND") == 1 then --发送短信指令
             local _,_,phone,text = data:find("C"..cmdTag.."SEND(%d+) +(.+)")
             if phone and text then
                 log.info("cmd","cmd send sms",phone,text)
@@ -76,7 +79,6 @@ function notify.add(phone,data)
     table.insert(buff,{phone,data})
     sys.publish("SMS_ADD")--推个事件
 end
-
 
 sys.taskInit(function()
     sys.wait(1000)
@@ -135,6 +137,45 @@ sys.taskInit(function()
                         end
                         sys.wait(5000)
                     end
+                elseif useServer == "bark" then --bark
+                    local text = data:gsub("%%","%%25")
+                    :gsub("+","%%2B")
+                    :gsub("/","%%2F")
+                    :gsub("?","%%3F")
+                    :gsub("#","%%23")
+                    :gsub("&","%%26")
+                    :gsub(" ","%%20")
+                    :gsub("\n","%%0A")
+                    local numberFrom = "sms from : "..sms[1]
+                    local numberFrom = numberFrom:gsub("%%","%%25")
+                    :gsub("+","%%2B")
+                    :gsub("/","%%2F")
+                    :gsub("?","%%3F")
+                    :gsub("#","%%23")
+                    :gsub("&","%%26")
+                    :gsub(" ","%%20")
+                    :gsub("\n","%%0A")
+                    --local copy = --后续增加复制验证码功能
+                    local myNumber = myNumber:gsub("%%","%%25")
+                    :gsub("+","%%2B")
+                    :gsub("/","%%2F")
+                    :gsub("?","%%3F")
+                    :gsub("#","%%23")
+                    :gsub("&","%%26")
+                    :gsub(" ","%%20")
+                    :gsub("\n","%%0A")
+
+                    local url = barkApi..barkKey.."/"..numberFrom.."/"..text.."?group="..myNumber
+                    log.info("notify","send to bark push server",url)
+                    --多试几次好了
+                    for i=1,10 do
+                        code, h, body = http.request("GET",url).wait()
+                        log.info("notify","pushed sms notify",code,h,body,sms[1])
+                        if code == 200 then
+                            break
+                        end
+                        sys.wait(5000)
+                    end
                 else--luatos推送服务
                     data = data:gsub("%%","%%25")
                     :gsub("+","%%2B")
@@ -143,6 +184,7 @@ sys.taskInit(function()
                     :gsub("#","%%23")
                     :gsub("&","%%26")
                     :gsub(" ","%%20")
+                    :gsub("\n","%%0A")
                     local url = luatosPushApi..luatosPush..".send/sms"..sms[1].."/"..data
                     log.info("notify","send to luatos push server",data,url)
                     --多试几次好了

@@ -20,7 +20,7 @@ end)
 led.status = 1
 local st = {5000,1,1000,200}
 --事件灯
-local ledDoing= gpio.setup(13, 0, gpio.PULLUP)
+local ledDoing= gpio.setup(8, 0, gpio.PULLUP)
 --闪闪就行了
 sys.taskInit(function()
     while true do

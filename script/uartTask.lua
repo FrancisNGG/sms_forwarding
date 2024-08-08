@@ -81,6 +81,9 @@ sys.subscribe(recvReady, function()
         if urc then--urc上报
             if urc == "CGATT" then--基站附着状态
                 sys.publish("AT_CGATT",line:match("%+CGATT: *(%d)") == "1")
+            elseif urc == "CNUM" then --获取到了本机号码
+                local number = string.sub(tostring(line),21,34)
+                sys.publish("AT_CNUM",number)               
             elseif urc == "CMT" then--来短信了
                 local len = tonumber(line:match("%+CMT: *, *(%d+)"))
                 repeat

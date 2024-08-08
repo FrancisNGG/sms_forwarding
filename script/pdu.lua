@@ -230,6 +230,7 @@ end
 --如果为长短信，当前是第几包
 function libT.decodePDU(pdu,len)
     collectgarbage("collect")--防止内存不足
+    --log.info("pdu data：",pdu)
     local offset = 5
     local addlen, addnum, flag, dcs, tz, txtlen, fo, longsms
     pdu = pdu:sub((#pdu / 2 - len) * 2 + 1)--PDU数据，不包括短信息中心号码
